@@ -9,8 +9,8 @@ const Main = () => {
   return (
     <Container>
       <MapView>
-        {/* <Map latitude={-15.843071} longitude={-48.0275374} /> */}
-        <Modal />
+        <Map latitude={-15.843071} longitude={-48.0275374} />
+        {/* <Modal /> */}
       </MapView>
     </Container>
   );
