@@ -7,7 +7,7 @@ import { MapArea, styles } from './styles';
 
 type Props = MapInterface;
 
-export const Map: React.FC<Props> = ({ latitude, longitude }) => {
+const Map: React.FC<Props> = ({ latitude, longitude }) => {
   const [location, setLocation] = useState({
     center: {
       latitude,
@@ -38,3 +38,5 @@ export const Map: React.FC<Props> = ({ latitude, longitude }) => {
     </MapArea>
   );
 };
+
+export default Map;
