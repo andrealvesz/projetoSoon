@@ -39,13 +39,9 @@ const Modal: React.FC = () => {
           <Oval />
         </S.IconsArea>
         <S.InputFieldArea>
-          {/* <S.InputArea> */}
-          <S.Input />
-          {/* </S.InputArea> */}
+          <S.Input placeholder="Origem" />
           <Separator />
-          {/* <S.InputArea> */}
-          <S.Input />
-          {/* </S.InputArea> */}
+          <S.Input placeholder="Destino" />
         </S.InputFieldArea>
       </S.ModalInputArea>
       <S.ModalResumeArea>

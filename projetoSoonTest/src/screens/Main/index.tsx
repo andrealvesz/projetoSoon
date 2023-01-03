@@ -1,18 +1,20 @@
 import React from 'react';
 
-import { Container, MapView } from './styles';
+import * as S from './styles';
 
 import Map from '~/components/Map';
 import Modal from '~/components/Modal';
 
 const Main = () => {
   return (
-    <Container>
-      <MapView>
+    <S.Container>
+      <S.MapView>
         <Map latitude={-15.843071} longitude={-48.0275374} />
-        {/* <Modal /> */}
-      </MapView>
-    </Container>
+      </S.MapView>
+      <S.ModalView>
+        <Modal />
+      </S.ModalView>
+    </S.Container>
   );
 };
 
