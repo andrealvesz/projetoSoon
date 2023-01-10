@@ -1,4 +1,9 @@
+type Coords = {
+  lat: number;
+  lng: number;
+};
 export interface MapInterface {
-  latitude: number;
-  longitude: number;
+  myCoords: Coords;
+  coordsCar: Coords;
+  showDirection: boolean;
 }
