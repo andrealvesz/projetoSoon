@@ -14,20 +14,22 @@ import { MapsAPI } from '~/config/map';
 
 type LocationContextData = {
   loading: boolean;
-  searchByAddress: (address: string) => Promise<void>;
-  cancelRequest(): void;
   myCoords: Coords;
   coordsCar: Coords;
   showDirection: boolean;
   distance: number;
   duration: number;
-  getRequestPrice(distance: number): Promise<void>;
-  locationPermission(): Promise<void>;
-  getCurrentLocation(): Promise<void>;
-  transformCoordForAddress(lat: number, lgn: number, type: string): void;
   localizationCar: string;
   price: number;
   myLocName: string;
+  driverInit: [Coords];
+  searchByAddress: (address: string) => Promise<void>;
+  cancelRequest(): void;
+  getRequestPrice(readyDistance: number): Promise<void>;
+  locationPermission(): Promise<void>;
+  getCurrentLocation(): Promise<void>;
+  transformCoordForAddress?(lat: number, lgn: number, type: string): void;
+  fetchTime(distance: number, duration: number): void;
 };
 
 type Coords = {
@@ -53,6 +55,7 @@ export const LocationProvider = ({ children }: Props): JSX.Element => {
   const [distance, setDistance] = useState(0);
   const [duration, setDuration] = useState(0);
   const [price, setPrice] = useState(0);
+  const [driverInit, setDriverInit] = useState([]);
   const [coordsCar, setCoordCar] = useState({});
   const [localizationCar, setLocalizationCar] = useState('');
   const [myLocName, setMyLocName] = useState('');
@@ -86,13 +89,9 @@ export const LocationProvider = ({ children }: Props): JSX.Element => {
       Geolocation.getCurrentPosition(
         async position => {
           if (position) {
-            const infoAddress = await Geocoder.from(
-              position.coords.latitude,
-              position.coords.longitude,
-            );
             const coords = {
-              latitude: infoAddress.results[0].geometry.location.lat,
-              longitude: infoAddress.results[0].geometry.location.lng,
+              latitude: -15.8368,
+              longitude: -48.0396,
             };
             transformCoordForAddress(coords.latitude, coords.longitude, 'user');
             setMyCoords(coords);
@@ -132,33 +131,50 @@ export const LocationProvider = ({ children }: Props): JSX.Element => {
 
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setMyCoords(coords);
-        setTimeout(() => {
-          setCoordCar({
-            latitude: -15.8414099,
-            longitude: -48.04399610000001,
-          });
-          setLoading(false);
-          setShowDirection(true);
-          transformCoordForAddress(-15.8414099, -48.04399610000001, 'car');
-        }, 3000);
+        const attCoordsCar = await newCoordsCar();
+        setCoordCar(attCoordsCar);
+        setShowDirection(true);
       } catch (error) {
         Alert.alert(
           'Falha',
           'Endereço não válido! Por favor, insira o endereço corretamente (Rua, Avenida).',
         );
+      } finally {
+        setLoading(false);
       }
     },
     [transformCoordForAddress],
   );
 
+  const newCoordsCar = () =>
+    new Promise<void>((resolve, reject) => {
+      const coordsCarPromise = {
+        latitude: -15.8414099,
+        longitude: -48.04399610000001,
+      };
+
+      transformCoordForAddress(
+        coordsCarPromise.latitude,
+        coordsCarPromise.longitude,
+        'car',
+      );
+
+      resolve(coordsCarPromise);
+    });
+
   const cancelRequest = useCallback(async () => {
+    setLoading(true);
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setTimeout(() => {
       setShowDirection(false);
       setDistance(0);
       setDuration(0);
+      setPrice(0);
       setCoordCar({});
       setMyCoords(myCoords);
+      setLoading(false);
+      setLocalizationCar('');
+      setDriverInit([]);
     }, 1000);
   }, []);
 
@@ -175,6 +191,11 @@ export const LocationProvider = ({ children }: Props): JSX.Element => {
     });
   };
 
+  const fetchTime = (distance: number, duration: number) => {
+    setDistance(distance);
+    setDuration(duration);
+  };
+
   const value = {
     loading,
     myCoords,
@@ -185,13 +206,13 @@ export const LocationProvider = ({ children }: Props): JSX.Element => {
     localizationCar,
     price,
     myLocName,
+    driverInit,
     searchByAddress,
     cancelRequest,
-    setDistance,
-    setDuration,
+    getCurrentLocation,
     getRequestPrice,
     locationPermission,
-    getCurrentLocation,
+    fetchTime,
   };
 
   return (

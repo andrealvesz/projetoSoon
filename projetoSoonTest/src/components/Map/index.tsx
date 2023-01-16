@@ -5,19 +5,16 @@ import MapView, {
   AnimatedRegion,
 } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
-import { Dimensions } from 'react-native';
+import { Alert, Dimensions } from 'react-native';
 
-// import { MapInterface } from './map.interface';
 import { MapsAPI } from '~/config/map';
+import { useLocation } from '~/hooks/useLocation';
 
 import Pin from '~/assets/icons/ic_Pin.svg';
 import Car from '~/assets/icons/car.svg';
 
 // Styles
 import { MapArea, styles } from './styles';
-import { useLocation } from '~/hooks/useLocation';
-
-// type Props = MapInterface;
 
 const { width, height } = Dimensions.get('window');
 const ASPECT_RATIO = width / height;
@@ -26,46 +23,49 @@ const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 const Map: React.FC = () => {
   const mapRef = useRef<MapView>(null);
-  const markerRef = useRef<MapView>(null);
+  const markerRef = useRef<Marker>(null);
   const {
     myCoords,
-    setDistance,
-    setDuration,
     coordsCar,
     getRequestPrice,
     showDirection,
-    getCurrentLocation,
+    fetchTime,
+    driverInit,
+    cancelRequest,
   } = useLocation();
 
   const [location, setLocation] = useState({
-    center: myCoords,
-    zoom: 16,
-    pitch: 0,
-    altitude: 0,
+    curLoc: myCoords,
+    carLoc: {},
+    coordinate: new AnimatedRegion({
+      latitude: myCoords.latitude,
+      longitude: myCoords.longitude,
+      latitudeDelta: LATITUDE_DELTA,
+      longitudeDelta: LONGITUDE_DELTA,
+    }),
     heading: 0,
   });
+  const { curLoc, carLoc, heading } = location;
+  const [driver, setDriver] = useState(driverInit);
+
+  let driverClone: any;
 
   useEffect(() => {
-    if (showDirection) {
+    if (driver.length > 0 && showDirection) {
       const interval = setInterval(() => {
         getLiveLocation();
-      }, 4000);
+      }, 7000);
       return () => clearInterval(interval);
     }
-  });
+  }, [driver, showDirection]);
 
   useEffect(() => {
-    setLocation({
-      center: myCoords,
-      zoom: 16,
-      pitch: 0,
-      altitude: 0,
-      heading: 0,
+    updateState({
+      curLoc: myCoords,
     });
   }, [myCoords]);
 
   const handleDirectionsReady = ready => {
-    // setDriver(ready.coordinates);
     mapRef.current.fitToCoordinates(ready.coordinates, {
       edgePadding: {
         right: width / 20,
@@ -74,30 +74,52 @@ const Map: React.FC = () => {
         top: height / 20,
       },
     });
+    setDriver(ready.coordinates);
+    fetchTime(ready.distance, ready.duration);
     getRequestPrice(ready.distance);
-    setDistance(ready.distance);
-    setDuration(ready.duration);
   };
-
-  // const handleMapChange = async () => {
-  //   const cam = await mapRef.current?.getCamera();
-  //   cam.altitude = 0;
-  //   setLocation(cam);
-  // };
 
   const updateState = data => setLocation(state => ({ ...state, ...data }));
 
+  const getCurrentLocCar = () =>
+    new Promise<void>((resolve, reject) => {
+      let overCurrentCar = {
+        latitude: 0,
+        longitude: 0,
+      };
+      driverClone = driverClone ? driverClone : [...driver];
+      let found = driverClone?.shift();
+      if (found) resolve(found);
+
+      overCurrentCar.over = true;
+      resolve(overCurrentCar);
+    });
+
   const getLiveLocation = async () => {
-    const { latitude, longitude } = await getCurrentLocation();
-    console.log('get live location after 4 second', latitude, longitude);
+    const { latitude, longitude, over } = await getCurrentLocCar();
+
+    if (over) {
+      Alert.alert('', 'O Guincho já se encontra no local', [
+        {
+          text: 'OK',
+          onPress: () => {
+            updateState({
+              curLoc: myCoords,
+            });
+            setDriver([]);
+            cancelRequest();
+          },
+        },
+      ]);
+    }
     // return;
     animate(latitude, longitude);
     updateState({
-      heading: 0,
-      curLoc: { latitude, longitude },
+      heading,
+      carLoc: { latitude, longitude },
       coordinate: new AnimatedRegion({
-        latitude: latitude,
-        longitude: longitude,
+        latitude,
+        longitude,
         latitudeDelta: LATITUDE_DELTA,
         longitudeDelta: LONGITUDE_DELTA,
       }),
@@ -107,7 +129,7 @@ const Map: React.FC = () => {
   const animate = (latitude, longitude) => {
     const newCoordinate = { latitude, longitude };
     if (markerRef.current) {
-      markerRef.current.animateCamera(newCoordinate, 7000);
+      markerRef.current.animateMarkerToCoordinate(newCoordinate, 7000);
     }
   };
 
@@ -119,10 +141,11 @@ const Map: React.FC = () => {
         style={styles.mapa}
         showsUserLocation
         followsUserLocation
-        camera={location}
-        // onRegionChangeComplete={handleMapChange}
-        // followsUserLocation
-        // showsUserLocation
+        region={{
+          ...curLoc,
+          latitudeDelta: LATITUDE_DELTA,
+          longitudeDelta: LONGITUDE_DELTA,
+        }}
       >
         {myCoords && (
           <Marker coordinate={myCoords}>
@@ -130,20 +153,24 @@ const Map: React.FC = () => {
           </Marker>
         )}
 
-        {coordsCar && coordsCar.latitude && (
-          <Marker coordinate={coordsCar}>
+        {Object.values(coordsCar).length > 0 && (
+          <Marker.Animated
+            ref={markerRef}
+            coordinate={Object.values(carLoc).length > 0 ? carLoc : coordsCar}
+          >
             <Car />
-          </Marker>
+          </Marker.Animated>
         )}
 
-        {showDirection && (
+        {Object.values(coordsCar).length > 0 && (
           <MapViewDirections
-            origin={myCoords}
-            destination={coordsCar}
+            origin={coordsCar}
+            destination={curLoc}
             apikey={MapsAPI}
             strokeWidth={7}
             strokeColor="#3A5DFB"
             onReady={handleDirectionsReady}
+            optimizeWaypoints
           />
         )}
       </MapView>
