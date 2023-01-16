@@ -4,15 +4,18 @@ import * as S from './styles';
 
 import Map from '~/components/Map';
 import Modal from '~/components/Modal';
+import { useLocation } from '~/hooks/useLocation';
 
 const Main = () => {
+  const { loading } = useLocation();
+
   return (
     <S.Container>
       <S.MapView>
-        <Map latitude={-15.843071} longitude={-48.0275374} />
+        <Map />
       </S.MapView>
       <S.ModalView>
-        <Modal />
+        <Modal loading={loading} />
       </S.ModalView>
     </S.Container>
   );
