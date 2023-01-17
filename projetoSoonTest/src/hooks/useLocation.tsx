@@ -89,9 +89,13 @@ export const LocationProvider = ({ children }: Props): JSX.Element => {
       Geolocation.getCurrentPosition(
         async position => {
           if (position) {
+            const infoAddress = await Geocoder.from(
+              position.coords.latitude,
+              position.coords.longitude,
+            );
             const coords = {
-              latitude: -15.8368,
-              longitude: -48.0396,
+              latitude: infoAddress.results[0].geometry.location.lat,
+              longitude: infoAddress.results[0].geometry.location.lng,
             };
             transformCoordForAddress(coords.latitude, coords.longitude, 'user');
             setMyCoords(coords);
