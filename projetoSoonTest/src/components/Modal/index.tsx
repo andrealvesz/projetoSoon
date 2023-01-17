@@ -29,6 +29,7 @@ const Modal: React.FC<ModalInterface> = ({ loading }) => {
     price,
   } = useLocation();
   const [myLocation, setMyLocation] = useState('');
+  const [writerLocation, setWriterLocation] = useState(false);
 
   const getLocation = async () => {
     myLocation !== ''
@@ -36,6 +37,11 @@ const Modal: React.FC<ModalInterface> = ({ loading }) => {
       : myLocName
       ? await searchByAddress(myLocName)
       : Alert.alert('', 'Antes de solicitar, informe sua localização!');
+  };
+
+  const handleWriteLocation = t => {
+    setWriterLocation(true);
+    setMyLocation(t);
   };
 
   return (
@@ -64,8 +70,8 @@ const Modal: React.FC<ModalInterface> = ({ loading }) => {
           </S.IconsArea>
           <S.InputFieldArea>
             <S.Input
-              value={myLocation ? myLocation : myLocName}
-              onChangeText={setMyLocation}
+              value={myLocation || writerLocation ? myLocation : myLocName}
+              onChangeText={handleWriteLocation}
               placeholder="Informe sua localização"
             />
           </S.InputFieldArea>
@@ -81,8 +87,8 @@ const Modal: React.FC<ModalInterface> = ({ loading }) => {
           </S.IconsArea>
           <S.InputFieldArea>
             <S.Input
-              value={myLocation ? myLocation : myLocName}
-              onChangeText={setMyLocation}
+              value={myLocation || writerLocation ? myLocation : myLocName}
+              onChangeText={handleWriteLocation}
               placeholder="Informe sua localização"
               editable={false}
             />
